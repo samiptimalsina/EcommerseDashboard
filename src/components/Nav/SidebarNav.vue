@@ -9,7 +9,6 @@
       <ul class="list-none">
         <li class="flex mr-2 pl-4 items-center">
           <component :is="item.icon" class="w-6 h-6 mr-2 mr-2" />
-
           <span class="ml-4"> {{ item.text }} </span>
         </li>
       </ul>

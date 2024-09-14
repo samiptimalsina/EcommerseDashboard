@@ -46,9 +46,9 @@ import SidebarNav from "@/components/Nav/SidebarNav.vue";
 import {
   HomeIcon,
   UsersIcon,
-  ChatIcon,
-  CogIcon,
-  LogoutIcon,
+  ChatBubbleLeftIcon,
+  ShoppingCartIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/vue/24/outline";
 
 const isOpen = ref(true);
@@ -58,11 +58,11 @@ function toggleSidebar() {
 }
 
 const navItems = [
-  { path: "/", text: "Dashboard", icon: HomeIcon },
+  { path: "/dashboard/overview", text: "Dashboard", icon: HomeIcon },
   { path: "/dashboard/users", text: "Users", icon: UsersIcon },
-  { path: "/messages", text: "Messages", icon: ChatIcon },
-  { path: "/settings", text: "Settings", icon: CogIcon },
-  { path: "/logout", text: "Logout", icon: LogoutIcon },
+  { path: "/messages", text: "Messages", icon: ChatBubbleLeftIcon },
+  { path: "/dashboard/products", text: "Products", icon: ShoppingCartIcon },
+  { path: "/logout", text: "Logout", icon: ArrowRightOnRectangleIcon },
 ];
 </script>
 

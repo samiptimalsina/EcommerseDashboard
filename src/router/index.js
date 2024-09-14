@@ -57,11 +57,11 @@ const routes = [
         component: () => import("@/views/Dashboard/users/EditUser.vue"),
       },
 
-      // {
-      //   path: "products",
-      //   name: "ProductList",
-      //   component: () => import("@/views/Dashboard/Products/ProductList.vue"),
-      // },
+      {
+        path: "products",
+        name: "ProductList",
+        component: () => import("@/views/Dashboard/Products/ProductList.vue"),
+      },
     ],
   },
 ];

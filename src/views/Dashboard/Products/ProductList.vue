@@ -1,4 +1,4 @@
-<!-- <template>
+<template>
   <ProductDataTable :products="products" />
 </template>
 
@@ -20,4 +20,4 @@ onMounted(async () => {
 });
 </script>
 
-<style></style> -->
+<style></style>

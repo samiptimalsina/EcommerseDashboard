@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from "vue";
+import { defineProps } from "vue";
 
 defineProps({
   products: {
