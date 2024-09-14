@@ -47,6 +47,6 @@ const logout = () => {
   authStore.logOut();
 };
 onMounted(async () => {
-  await authStore.authUser(); 
+  await authStore.authUser();
 });
 </script>

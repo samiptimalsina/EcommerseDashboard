@@ -1,4 +1,4 @@
-<!-- <template>
+<template>
   <table>
     <thead>
       <tr>
@@ -68,4 +68,4 @@ img {
   max-width: 100px;
   height: auto;
 }
-</style> -->
+</style>

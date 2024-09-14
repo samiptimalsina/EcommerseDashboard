@@ -1,8 +1,6 @@
 <template>
-  <div id="app">
-    <!-- Router view will render the current route's layout and content -->
-    <router-view></router-view>
-  </div>
+  <!-- Router view will render the current route's layout and content -->
+  <router-view></router-view>
 </template>
 
 <script>
@@ -18,6 +16,5 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
 }
 </style>
