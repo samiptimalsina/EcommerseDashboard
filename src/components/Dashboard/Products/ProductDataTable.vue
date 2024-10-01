@@ -1,8 +1,22 @@
 <template>
   <div class="p-6 bg-gray-100 rounded-lg shadow-md">
-    <div class="flex mx-0 justify-between mb-4">
+    <div class="flex justify-between mb-4">
       <SearchFilter @search="handleSearchEvent" />
       <AddButton :link="{ name: 'AddProduct' }" buttonText="Add New Product" />
+    </div>
+
+    <div class="mb-4">
+      <label for="itemsPerPage" class="text-gray-600">Items per page:</label>
+      <select
+        v-model="itemsPerPage"
+        id="itemsPerPage"
+        class="ml-2 border border-gray-300 rounded"
+        @change="resetPagination"
+      >
+        <option v-for="option in itemsPerPageOptions" :key="option" :value="option">
+          {{ option }}
+        </option>
+      </select>
     </div>
 
     <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -29,7 +43,7 @@
           class="hover:bg-gray-100"
         >
           <td class="py-4 px-6 border-b border-gray-200">
-            {{ (props.currentPage - 1) * props.itemsPerPage + index + 1 }}
+            {{ (currentPage - 1) * itemsPerPage + index + 1 }}
           </td>
           <td class="py-4 px-6 border-b border-gray-200">{{ product.name }}</td>
           <td class="py-4 px-6 border-b border-gray-200">{{ product.slug }}</td>
@@ -64,14 +78,14 @@
 
     <div class="flex justify-between items-center mt-4">
       <span class="text-gray-600">
-        Showing {{ (props.currentPage - 1) * props.itemsPerPage + 1 }} -
-        {{ Math.min(props.currentPage * props.itemsPerPage, props.totalProducts) }} of
-        {{ props.totalProducts }}
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} -
+        {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} of
+        {{ filteredProducts.length }}
       </span>
       <div class="pagination-controls flex space-x-2">
         <button
           @click="prevPage"
-          :disabled="props.currentPage === 1"
+          :disabled="currentPage === 1"
           class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
         >
           Previous
@@ -81,8 +95,8 @@
           :key="page"
           class="page-number cursor-pointer px-3 py-1 border rounded-lg"
           :class="{
-            'bg-blue-500 text-white': props.currentPage === page,
-            'text-blue-500': props.currentPage !== page,
+            'bg-blue-500 text-white': currentPage === page,
+            'text-blue-500': currentPage !== page,
           }"
           @click="goToPage(page)"
         >
@@ -90,7 +104,7 @@
         </span>
         <button
           @click="nextPage"
-          :disabled="props.currentPage === totalPages"
+          :disabled="currentPage === totalPages"
           class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
         >
           Next
@@ -112,98 +126,86 @@ import { format } from "date-fns";
 const props = defineProps({
   products: {
     type: Array,
-    default: () => [],
     required: true,
+    default: () => [],
   },
   totalProducts: {
-    type: Number,
-    required: true,
-  },
-  currentPage: {
-    type: Number,
-    required: true,
-  },
-  itemsPerPage: {
     type: Number,
     required: true,
   },
 });
 
 // Define emits
-const emit = defineEmits(["delete", "fetchProducts"]);
-const searchInput = ref("");
+const emit = defineEmits(["delete", "page-changed"]);
 
-// Calculate total pages
+// Setup state variables
+const searchQuery = ref("");
+const currentPage = ref(1);
+const itemsPerPage = ref(10); // Make this reactive
+const itemsPerPageOptions = [5, 10, 20, 50]; // Options for items per page
+
+// Computed properties
+const filteredProducts = computed(() => {
+  return props.products.filter((product) => {
+    return product.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+  });
+});
+
 const totalPages = computed(() => {
-  return Math.ceil(props.totalProducts / props.itemsPerPage) || 1;
+  return Math.ceil(props.totalProducts / itemsPerPage.value);
 });
 
-// Filter products based on search input
-const productFilter = computed(() => {
-  if (!props.products || !Array.isArray(props.products)) {
-    return [];
-  }
-
-  return props.products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchInput.value.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchInput.value.toLowerCase())
-  );
-});
-
-// Get paginated products
 const paginatedProducts = computed(() => {
-  if (!productFilter.value || !Array.isArray(productFilter.value)) {
-    return []; // Return empty if there's no valid filtered data
-  }
-
-  const startIndex = (props.currentPage - 1) * props.itemsPerPage;
-  const endIndex = startIndex + props.itemsPerPage;
-  return productFilter.value.slice(startIndex, endIndex);
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredProducts.value.slice(start, end);
 });
 
-// Format date
-const formatDateString = (dateString) => {
-  return format(new Date(dateString), "MMM dd, yyyy HH:mm:ss");
-};
-
-// Page navigation methods
-const nextPage = () => {
-  if (props.currentPage < totalPages.value) {
-    emit("fetchProducts", {
-      page: props.currentPage + 1,
-      itemsPerPage: props.itemsPerPage,
-    });
+// Pagination methods
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    emit("page-changed", currentPage.value);
   }
-};
+}
 
-const prevPage = () => {
-  if (props.currentPage > 1) {
-    emit("fetchProducts", {
-      page: props.currentPage - 1,
-      itemsPerPage: props.itemsPerPage,
-    });
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    emit("page-changed", currentPage.value);
   }
-};
+}
 
-const goToPage = (page) => {
-  if (page > 0 && page <= totalPages.value) {
-    emit("fetchProducts", { page, itemsPerPage: props.itemsPerPage });
-  }
-};
+function goToPage(page) {
+  currentPage.value = page;
+  emit("page-changed", currentPage.value);
+}
 
-// Handle search event
-const handleSearchEvent = (event) => {
-  searchInput.value = event;
-  emit("search", searchInput.value);
-};
+function resetPagination() {
+  currentPage.value = 1; // Reset to first page when items per page changes
+  emit("page-changed", currentPage.value);
+}
 
 // Handle delete action
-const handleDelete = (id) => {
+function handleDelete(id) {
   emit("delete", id);
-};
+}
+
+// Utility function to format date
+function formatDateString(dateString) {
+  return format(new Date(dateString), "dd/MM/yyyy HH:mm");
+}
+
+// Handle search event
+function handleSearchEvent(query) {
+  searchQuery.value = query;
+  resetPagination();
+}
 </script>
 
 <style scoped>
-/* Add any additional scoped styles here if needed */
+/* Add any additional styles here */
+.page-number {
+  transition: background-color 0.3s ease;
+}
 </style>

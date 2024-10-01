@@ -4,8 +4,6 @@
     <ProductDataTable
       :products="productStore.products"
       :totalProducts="productStore.totalProducts"
-      :currentPage="productStore.currentPage"
-      :itemsPerPage="productStore.itemsPerPage"
       @page-changed="handlePageChange"
       @delete="handleDeleteProduct"
       @search="handleSearch"
@@ -46,6 +44,9 @@ const handleSearch = (query) => {
   productStore.searchQuery = query;
   fetchProducts(productStore.itemsPerPage, 1);
 };
+// const totalProduct = () => {
+//   // productStore.total
+// };
 
 // Fetch products on component mount
 onMounted(() => {

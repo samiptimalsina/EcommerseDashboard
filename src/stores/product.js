@@ -5,6 +5,8 @@ export const useProductStore = defineStore("product", {
   state: () => ({
     products: [],
     itemsPerPage: 10,
+    totalProducts: null,
+    currentPage: null,
   }),
 
   actions: {
