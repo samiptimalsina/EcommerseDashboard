@@ -37,14 +37,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="(product, index) in paginatedProducts"
-          :key="product.id"
-          class="hover:bg-gray-100"
-        >
-          <td class="py-4 px-6 border-b border-gray-200">
-            {{ (currentPage - 1) * itemsPerPage + index + 1 }}
-          </td>
+        <tr v-for="(product, index) in products" :key="product.id">
+          <td class="py-4 px-6 border-b border-gray-200">{{ index + 1 }}</td>
           <td class="py-4 px-6 border-b border-gray-200">{{ product.name }}</td>
           <td class="py-4 px-6 border-b border-gray-200">{{ product.slug }}</td>
           <td class="py-4 px-6 border-b border-gray-200">{{ product.description }}</td>
@@ -67,145 +61,95 @@
           </td>
           <td class="py-4 px-6 border-b border-gray-200 flex space-x-2">
             <EditButton :link="{ name: 'EditProduct', params: { id: product.id } }" />
-            <DeleteButton @delete="handleDelete(product.id)" />
+            <DeleteButton @delete="deleteProduct(product.id)" />
           </td>
         </tr>
-        <tr v-if="!paginatedProducts.length">
+        <tr v-if="products.length === 0">
           <td colspan="12" class="text-center py-4">No products available.</td>
         </tr>
       </tbody>
     </table>
 
     <div class="flex justify-between items-center mt-4">
-      <span class="text-gray-600">
-        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} -
-        {{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} of
-        {{ filteredProducts.length }}
-      </span>
-      <div class="pagination-controls flex space-x-2">
-        <button
-          @click="prevPage"
-          :disabled="currentPage === 1"
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-        >
-          Previous
-        </button>
-        <span
-          v-for="page in totalPages"
-          :key="page"
-          class="page-number cursor-pointer px-3 py-1 border rounded-lg"
-          :class="{
-            'bg-blue-500 text-white': currentPage === page,
-            'text-blue-500': currentPage !== page,
-          }"
-          @click="goToPage(page)"
-        >
-          {{ page }}
-        </span>
-        <button
-          @click="nextPage"
-          :disabled="currentPage === totalPages"
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-        >
-          Next
-        </button>
-      </div>
+      <PaginationComponent
+        :currentPage="currentPage"
+        :totalProducts="totalProducts"
+        :itemsPerPage="itemsPerPage"
+        @page-changed="handlePageChange"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+
+import { useProductStore } from "@/stores/product";
 import DeleteButton from "@/components/Buttons/DeleteButton.vue";
 import EditButton from "@/components/Buttons/EditButton.vue";
 import AddButton from "@/components/Buttons/AddButton.vue";
 import SearchFilter from "@/components/Filters/SearchForm.vue";
-import { format } from "date-fns";
+import PaginationComponent from "@/components/Dashboard/PaginationComponent.vue";
 
-// Define props
-const props = defineProps({
-  products: {
-    type: Array,
-    required: true,
-    default: () => [],
-  },
-  totalProducts: {
-    type: Number,
-    required: true,
-  },
+const productStore = useProductStore();
+const {
+  products,
+  totalProducts,
+  currentPage,
+  searchQuery: storeSearchQuery,
+} = storeToRefs(productStore);
+
+const itemsPerPage = ref(10); // You can change this to your desired items per page
+const searchQuery = ref(storeSearchQuery.value);
+const itemsPerPageOptions = ref([5, 10, 15, 20]); // Define your items per page options
+
+// Watch for changes in searchQuery and update the store's searchQuery
+watch(searchQuery, (newQuery) => {
+  productStore.searchQuery = newQuery; // Sync with the store
+  fetchProducts(currentPage.value, itemsPerPage.value, newQuery);
 });
 
-// Define emits
-const emit = defineEmits(["delete", "page-changed"]);
+// Fetch products based on current page, items per page, and search query
+const fetchProducts = (pageNumber, itemsPerPage, searchQuery) => {
+  productStore.fetchProducts(itemsPerPage, pageNumber, searchQuery); // Make sure to pass itemsPerPage first
+};
 
-// Setup state variables
-const searchQuery = ref("");
-const currentPage = ref(1);
-const itemsPerPage = ref(10); // Make this reactive
-const itemsPerPageOptions = [5, 10, 20, 50]; // Options for items per page
+// Handle page change from pagination component
+const handlePageChange = (page) => {
+  fetchProducts(page, itemsPerPage.value, searchQuery.value);
+};
 
-// Computed properties
-const filteredProducts = computed(() => {
-  return props.products.filter((product) => {
-    return product.name.toLowerCase().includes(searchQuery.value.toLowerCase());
-  });
-});
-
-const totalPages = computed(() => {
-  return Math.ceil(props.totalProducts / itemsPerPage.value);
-});
-
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value;
-  const end = start + itemsPerPage.value;
-  return filteredProducts.value.slice(start, end);
-});
-
-// Pagination methods
-function prevPage() {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-    emit("page-changed", currentPage.value);
+// Delete product and refresh product list
+const deleteProduct = async (productId) => {
+  const response = await productStore.deleteProduct(productId);
+  if (response) {
+    fetchProducts(currentPage.value, itemsPerPage.value, searchQuery.value); // Refresh products after deletion
   }
-}
-
-function nextPage() {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-    emit("page-changed", currentPage.value);
-  }
-}
-
-function goToPage(page) {
-  currentPage.value = page;
-  emit("page-changed", currentPage.value);
-}
-
-function resetPagination() {
-  currentPage.value = 1; // Reset to first page when items per page changes
-  emit("page-changed", currentPage.value);
-}
-
-// Handle delete action
-function handleDelete(id) {
-  emit("delete", id);
-}
-
-// Utility function to format date
-function formatDateString(dateString) {
-  return format(new Date(dateString), "dd/MM/yyyy HH:mm");
-}
+};
 
 // Handle search event
-function handleSearchEvent(query) {
-  searchQuery.value = query;
-  resetPagination();
-}
+const handleSearchEvent = (query) => {
+  searchQuery.value = query; // Update the search query
+};
+
+// Reset pagination and fetch products
+const resetPagination = () => {
+  currentPage.value = 1; // Reset to the first page
+  fetchProducts(currentPage.value, itemsPerPage.value, searchQuery.value); // Fetch products again
+};
+
+// Format date string (implement this according to your requirements)
+const formatDateString = (dateString) => {
+  const options = { year: "numeric", month: "2-digit", day: "2-digit" };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+onMounted(() => {
+  fetchProducts(currentPage.value ?? 1, itemsPerPage.value, searchQuery.value); // Fetch products on mount
+});
 </script>
 
 <style scoped>
-/* Add any additional styles here */
-.page-number {
-  transition: background-color 0.3s ease;
-}
+/* Add your custom styles here if needed */
 </style>

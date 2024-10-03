@@ -7,13 +7,15 @@ export const useProductStore = defineStore("product", {
     itemsPerPage: 10,
     totalProducts: null,
     currentPage: null,
+    searchQuery: "", // Add search query state
   }),
 
   actions: {
-    async fetchProducts(itemsPerPage, currentPage) {
+    async fetchProducts(itemsPerPage, currentPage, searchQuery = "") {
       try {
+        // Modify the API call to include the search query
         const response = await axiosInstance.get(
-          `/products?itemsPerPage=${itemsPerPage}&page=${currentPage}`
+          `/products?itemsPerPage=${itemsPerPage}&page=${currentPage}&search=${searchQuery}`
         );
         // Ensure products is an array
         this.products = response.data.data || [];
@@ -55,7 +57,6 @@ export const useProductStore = defineStore("product", {
       }
     },
 
-    // Delete a product (optional)
     async deleteProduct(productId) {
       try {
         await axiosInstance.delete(`/products/${productId}`);
